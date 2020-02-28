@@ -69,10 +69,9 @@ def make_entry(key, val):
 #fetch data from mails and write progress to stdout
 num_messages = len(mail_box.list()[1])
 print('Checking mails:')
-sys.stdout.write('Done: ')
 for i in range(num_messages):
     #notify progress
-    done_str = '{}/{}'.format(i+1, num_messages)
+    done_str = 'Done: {}/{}'.format(i+1, num_messages)
     sys.stdout.write(done_str)
     sys.stdout.flush()
     sys.stdout.write('\b' * len(done_str))
@@ -104,7 +103,6 @@ for i in range(num_messages):
         continue
     for i in range(q_len):
         make_entry(questions[i], answers[i])
-sys.stdout.write('\033[2K\033[1G')
 sys.stdout.write('All done.\n')
 sys.stdout.flush()
 
@@ -164,36 +162,48 @@ def end_write_plot_to_pdf(pdf):
 
 #write questions + answers to simple .txt file if so desired
 if write_txt:
-    with open(txt_file_name, 'w') as res_file:
-        print('Writing results to {}...'.format(res_file.name))
-        for question, sorted_answers in sorted_results.items():
-            write_qa(res_file, question, sorted_answers)
-        print('Done.')
+    print('Writing results to {}...'.format(txt_file_name))
+    try:
+        with open(txt_file_name, 'w') as res_file:
+            for question, sorted_answers in sorted_results.items():
+                write_qa(res_file, question, sorted_answers)
+            print('Done.')
+    except:
+        print('Could not write txt file. Check if some other program '
+            'forbids access')
     
 #create bar graph pdf file if so desired
 if write_bars:
-    with PdfPages(bar_file_name) as pdf:
-        print('Creating bar plots in file {}...'.format(bar_file_name))
-        for question, sorted_answers in sorted_results.items():
-            labels = [label[0] for label in sorted_answers]
-            ratings = [label[1] for label in sorted_answers]
-            start_write_plot_to_pdf()
-            plot_bars(question, ratings, labels)
-            end_write_plot_to_pdf(pdf)
-        print('Done.')
+    print('Creating bar plots in file {}...'.format(bar_file_name))
+    try:
+        with PdfPages(bar_file_name) as pdf:
+            for question, sorted_answers in sorted_results.items():
+                labels = [label[0] for label in sorted_answers]
+                ratings = [label[1] for label in sorted_answers]
+                start_write_plot_to_pdf()
+                plot_bars(question, ratings, labels)
+                end_write_plot_to_pdf(pdf)
+            print('Done.')
+    except:
+        print('Could not write to bar plot pdf file. Maybe it is currently '
+            'opened in a pdf viewer?')
         
         
 #create pie graph pdf file if so desired
 if write_pies:
-    with PdfPages(pie_file_name) as pdf:
-        print('Creating pie plots in file {}...'.format(pie_file_name))
-        for question, sorted_answers in sorted_results.items():
-            labels = [label[0] for label in sorted_answers]
-            ratings = [label[1] for label in sorted_answers]
-            start_write_plot_to_pdf()
-            plot_pie(question, ratings, labels)
-            end_write_plot_to_pdf(pdf)
-        print('Done.')
+    print('Creating pie plots in file {}...'.format(pie_file_name))
+    try:
+        with PdfPages(pie_file_name) as pdf:
+            for question, sorted_answers in sorted_results.items():
+                labels = [label[0] for label in sorted_answers]
+                ratings = [label[1] for label in sorted_answers]
+                start_write_plot_to_pdf()
+                plot_pie(question, ratings, labels)
+                end_write_plot_to_pdf(pdf)
+            print('Done.')
+    except:
+        print('Could not write to pie plot pdf file. Maybe it is currently '
+            'opened in a pdf viewer?')
 
 #close open connection, finish up
 mail_box.quit()
