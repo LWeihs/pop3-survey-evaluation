@@ -144,13 +144,13 @@ def plot_bars(question, ratings, labels):
     plt.bar(x, ratings, color=get_colors(nr_answers))
     plt.xticks(x, labels)
     plt.title(question)
-    plt.tight_layout
+    plt.tight_layout()
     pass
     
 def plot_pie(question, ratings, labels):
     plt.pie(ratings, labels=labels, colors=get_colors(len(labels)))
     plt.title(question)
-    plt.tight_layout
+    plt.tight_layout()
     pass
 
 def start_write_plot_to_pdf():
