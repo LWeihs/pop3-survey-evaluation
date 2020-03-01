@@ -77,20 +77,23 @@ for i in range(num_messages):
     sys.stdout.write('\b' * len(done_str))
     
     #get email html content
-    raw_email  = b"\n".join(mail_box.retr(i+1)[1])
-    msg = email.message_from_bytes(raw_email)
-    subject = decode_header(msg['Subject'])[0][0]
-    if (subject != filter_subject):
+    try:
+        raw_email  = b"\n".join(mail_box.retr(i+1)[1])
+        msg = email.message_from_bytes(raw_email)
+        subject = decode_header(msg['Subject'])[0][0]
+        if (subject != filter_subject):
+            continue
+        content = msg.get_payload(decode=True)
+        content = content.decode('utf-8')
+        
+        #extract questions and answers from html content
+        questions = []
+        answers = []
+        soup = BeautifulSoup(content, 'html.parser')
+        wrap = soup.find(class_='mcnTextContent')
+        tds = wrap.find_all('td')
+    except:
         continue
-    content = msg.get_payload(decode=True)
-    content = content.decode('utf-8')
-    
-    #extract questions and answers from html content
-    questions = []
-    answers = []
-    soup = BeautifulSoup(content, 'html.parser')
-    wrap = soup.find(class_='mcnTextContent')
-    tds = wrap.find_all('td')
     for answer in tds:
         answer = str(answer.contents[0])
         m = re.search('<strong>(.*)<\/strong>', answer)
