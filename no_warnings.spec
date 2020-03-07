@@ -2,14 +2,18 @@
 
 block_cipher = None
 
+from PyInstaller.utils.hooks import collect_data_files
+
+added_files = collect_data_files('pyphen')
+extra_imports = ['pkg_resources.py2_warn', 'pyphen']
 
 a = Analysis(['survey_evaluation.py'],
-             pathex=['C:\\Users\\Lennart\\Desktop\\pop3-survey-evaluation'],
+             pathex=['C:\\Users\\Lennart Weihs\\Documents\\GitHub\\pop3-survey-evaluation'],
              binaries=[],
-             datas=[],
-             hiddenimports=[],
-             hookspath=[],
-             runtime_hooks=[],
+             datas=added_files,
+             hiddenimports=extra_imports,
+             hookspath=None,
+             runtime_hooks=None,
              excludes=[],
              win_no_prefer_redirects=False,
              win_private_assemblies=False,
@@ -30,4 +34,4 @@ exe = EXE(pyz,
           upx=True,
           upx_exclude=[],
           runtime_tmpdir=None,
-          console=True )
+          console=True)

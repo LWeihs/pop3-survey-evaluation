@@ -9,7 +9,7 @@ import sys
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from matplotlib.backends.backend_pdf import PdfPages
-import pyphen
+from pyphen import Pyphen
 
 #set up script params
 desc = ('Get evaluation data from your mail server and writes results to a '
@@ -34,7 +34,7 @@ parser.add_argument('-nopie', action='store_true',
 args = parser.parse_args()
 
 #set variables used in script, apply changes to colors, text lengths, etc. here
-german_dict = pyphen.Pyphen(lang='de_DE')
+german_dict = Pyphen(lang='de_DE')
 login = args.login
 password = args.password
 pop_server = (args.pop_server if args.pop_server else 'pop3.web.de')
@@ -49,7 +49,7 @@ colors_ten = ['red', 'darkorange', 'gold', 'yellowgreen', 'limegreen',
 txt_file_name = 'results.txt'
 bar_file_name = 'result_bars.pdf'
 pie_file_name = 'result_pies.pdf'
-pie_wrap_len = 20
+pie_wrap_len = 19
 bar_wrap_len = 10
 
 #establish server connection
