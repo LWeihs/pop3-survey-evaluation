@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 import re
 import argparse
 import sys
+from statistics import mean
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from matplotlib.backends.backend_pdf import PdfPages
@@ -33,24 +34,41 @@ parser.add_argument('-nopie', action='store_true',
                     help='Disable plotting of pie plots')
 args = parser.parse_args()
 
-#set variables used in script, apply changes to colors, text lengths, etc. here
+### CONFIG - SET VARIABLES AND DEFAULTS HERE ###
+#pyphen dictionary
 german_dict = Pyphen(lang='de_DE')
+#e-mail information
 login = args.login
 password = args.password
 pop_server = (args.pop_server if args.pop_server else 'pop3.web.de')
 filter_subject = (args.subject if args.subject else 'Evaluation')
+#file information
 write_txt = not args.notxt
 write_bars = not args.nobar
 write_pies = not args.nopie
+txt_file_name = 'results.txt'
+bar_file_name = 'result_bars.pdf'
+pie_file_name = 'result_pies.pdf'
+#allowed text lengths until new line for plot labels
+pie_wrap_len = 19
+bar_wrap_len = 10
+#used colors for different plot sizes
 colors_simple = ['red', 'royalblue']
 colors_five = ['red', 'darkorange', 'gold', 'limegreen', 'royalblue']
 colors_ten = ['red', 'darkorange', 'gold', 'yellowgreen', 'limegreen',
               'deepskyblue', 'royalblue', 'navy', 'purple', 'darkmagenta']
-txt_file_name = 'results.txt'
-bar_file_name = 'result_bars.pdf'
-pie_file_name = 'result_pies.pdf'
-pie_wrap_len = 19
-bar_wrap_len = 10
+#used font sizes in plots
+text_size = 12
+title_size = 14
+tick_size = 10 #size of axes tick labels
+pie_num_size = 10 #size of counts inside pie chart
+### CONFIG END ###
+
+#set pyplot font sizes to config values
+plt.rc('font', size=text_size)
+plt.rc('axes', titlesize=title_size)
+plt.rc('xtick', labelsize=tick_size)
+plt.rc('ytick', labelsize=tick_size)
 
 #establish server connection
 mail_box = None
@@ -63,13 +81,38 @@ except Exception as err:
     exit(1)
 print('Connected to mail server...')
 
-#prepare to gather results in dict
+#prepare to gather results in dict and mark numerical questions
 results = {}
+number_questions = set()
+def check_uint(s):
+    res = {
+        'success': True,
+        'value': None,
+    }
+    try:
+        i = int(s)
+        if i < 0:
+            res['success'] = False
+        else:
+            res['value'] = i
+    except ValueError:
+        res['success'] = False
+    return res
+    
 def make_entry(key, val):
     if not key in results:
         results[key] = []
+    is_number_question = True
     for entry in val:
+        if is_number_question:
+            uint_info = check_uint(entry)
+            if uint_info['success']:
+                entry = uint_info['value']
+            else:
+                is_number_question = False
         results[key].append(entry)
+    if is_number_question:
+        number_questions.add(key)
 
 #fetch data from mails and write progress to stdout
 num_messages = len(mail_box.list()[1])
@@ -141,11 +184,20 @@ for question, answers in results.items():
     sorted_answers = sorted(counts.items(), key=lambda kv: kv[1],
                            reverse = True)
     sorted_results[question] = sorted_answers
+#get averages for purely numerical questions
+means = {}
+for question, answers in results.items():
+    if question in number_questions:
+        means[question] = round(mean(answers), 2)
+def get_means_str(question):
+    return 'Ø: {}'.format(means[question])
 
 #prepare writing to txt file
 def write_qa(res_file, question, sorted_counts):
     res_file.write('Frage: {}\n'.format(question))
     res_file.write('Antworten:\n')
+    if question in means:
+        res_file.write('\t{}\n'.format(get_means_str(question)))
     for answer, times in sorted_counts:
         res_file.write('\t{} (x{})\n'.format(answer, times))
     res_file.write('\n')
@@ -161,6 +213,8 @@ def get_colors(nr_answers):
 
 #prepare wrapping of words with hyphenation - fails on very short line_len
 def wrap_word(full_str, line_len):
+    if not isinstance(full_str, str):
+        return full_str
     words = full_str.split()
     lines = []
     cur_line = ''
@@ -211,12 +265,21 @@ def plot_bars(question, ratings, labels):
     axis.yaxis.set_major_locator(ticker.MaxNLocator(integer=True))
     plt.bar(x, ratings, color=get_colors(nr_answers))
     plt.xticks(x, labels)
+    if question in means:
+        plt.text(0.83, 0.85, get_means_str(question),
+                 transform=plt.gcf().transFigure)
     plt.title(question)
     plt.tight_layout()
     
 def plot_pie(question, ratings, labels):
     labels = [wrap_word(l, pie_wrap_len) for l in labels]
-    plt.pie(ratings, labels=labels, colors=get_colors(len(labels)))
+    total = sum(ratings)
+    plt.pie(ratings, labels=labels, colors=get_colors(len(labels)),
+            autopct=lambda p: '{:.0f}'.format(p * total / 100),
+            textprops={'fontsize': pie_num_size})
+    if question in means:
+        plt.text(0.85, 0.1, get_means_str(question),
+                 transform=plt.gcf().transFigure)
     plt.title(question)
     plt.tight_layout()
 
@@ -231,7 +294,7 @@ def end_write_plot_to_pdf(pdf):
 if write_txt:
     print('Writing results to {}...'.format(txt_file_name))
     try:
-        with open(txt_file_name, 'w') as res_file:
+        with open(txt_file_name, 'w', encoding='utf8') as res_file:
             for question, sorted_answers in sorted_results.items():
                 write_qa(res_file, question, sorted_answers)
             print('Done.')
@@ -268,7 +331,8 @@ if write_pies:
                 plot_pie(question, ratings, labels)
                 end_write_plot_to_pdf(pdf)
             print('Done.')
-    except:
+    except Exception as e:
+        print(e)
         print('Could not write to pie plot pdf file. Maybe it is currently '
             'opened in a pdf viewer?')
 
