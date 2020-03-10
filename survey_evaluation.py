@@ -331,8 +331,7 @@ if write_pies:
                 plot_pie(question, ratings, labels)
                 end_write_plot_to_pdf(pdf)
             print('Done.')
-    except Exception as e:
-        print(e)
+    except:
         print('Could not write to pie plot pdf file. Maybe it is currently '
             'opened in a pdf viewer?')
 
